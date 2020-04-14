@@ -66,7 +66,8 @@ def MarkContour(image_url,coord,width,height,chk):
 		new_file.write(base64.decodebytes(image_url))
 
 	image = cv2.imread(filename)
-	image = cv2.resize(image, (500, height),interpolation = cv2.INTER_NEAREST)
+	print(width,height)
+	image = cv2.resize(image, (width, height),interpolation = cv2.INTER_NEAREST)
 	os.remove(filename)
 	tempim = image.copy()
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -111,7 +112,7 @@ def MarkContour(image_url,coord,width,height,chk):
 	dst = cv2.inpaint(img, dilate, 3, cv2.INPAINT_NS)
 
 	ts = datetime.datetime.now().timestamp()
-	filename = str(int(ts)) + "temp.jpg"
+	filename = "tempfiles/"+str(int(ts)) + "temp.jpg"
 	cv2.imwrite(filename, dst)
 
 	with open(filename, "rb") as image_file:
