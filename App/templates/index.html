@@ -1,0 +1,457 @@
+<!DOCTYPE>
+<html lang="en">
+  <head>
+    <title>Demo Select Areas</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    {% load static %}
+    <link href="/static/css/example.css" media="screen" rel="stylesheet" type="text/css" />
+    <link href="/static/css/jquery.selectareas.css" media="screen" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!--[if lte IE 8]><link href="../resources/jquery.selectareas.ie8.css" media="screen" rel="stylesheet" type="text/css" /> <![endif]-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="/static/js/jquery-1.11.3.min.js" type="text/javascript"></script>
+    <script src="/static/js/jquery.selectareas.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+      var k;
+      var chk;
+      var counter = 0;
+      $(document).ready(function () {
+
+        initialCall();
+
+      });
+
+
+
+      function areaToString (area) {
+        return (typeof area.id === "undefined" ? "" : (area.id + ": ")) + area.x + ':' + area.y  + ' ' + area.width + 'x' + area.height + '<br />'
+      };
+
+      // Log the quantity of selections
+      function debugQtyAreas (event, id, areas) {
+        k = areas;
+        console.log("We have "+ areas.length + "selected areas");
+      };
+
+
+      function initialCall(){
+        console.log("called");
+         img = document.getElementById('example');
+         const dataUrl = getDataUrl(img);
+
+         var width = img.width;
+         var height = img.height;
+         console.log('width '+width+' height '+height);
+          var cookieValue = null;
+          var cookies = document.cookie.split(';');
+          cookies = cookies[1].split('=');
+          cookieValue = cookies[1]
+          var csrftoken = cookieValue;
+          console.log(csrftoken);
+
+          $.ajax({
+              method: 'POST',
+              url: 'reccoord',
+              data: {'image':dataUrl,'width':width,'height':height,"csrfmiddlewaretoken" : csrftoken,'check':'0'},
+              success: function (response) {
+                   coord = response['coord'];
+                   console.log(coord);
+                   temparr = [];
+
+                   for(i=0;i<coord.length;i++)
+                   {
+                      var dict = []; // create an empty array
+                      dict['x'] = coord[i][0];
+                      dict['y'] = coord[i][1];
+                      dict['width'] = coord[i][2];
+                      dict['height'] = coord[i][3];
+                      temparr.push(dict);
+                   }
+                   console.log(temparr);
+                   $('img#example').selectAreas({
+                        minSize: [10, 10],
+                        onChanged: debugQtyAreas,
+                        width: 500,
+                        areas: temparr
+                      });
+              },
+              error: function (response) {
+                   alert("Encountered an error .. ..");
+              }
+          });
+
+
+      };
+
+      function RecCoord(){
+
+         img = document.getElementById('example');
+         const dataUrl = getDataUrl(img);
+
+         var st = document.getElementById("example2");
+         st.style.display = '';
+
+         var stt = document.getElementById("canvas_img");
+         stt.style.display = 'none';
+
+         var width = img.width;
+         var height = img.height;
+
+          var cookieValue = null;
+          var cookies = document.cookie.split(';');
+          cookies = cookies[1].split('=');
+          cookieValue = cookies[1]
+          var csrftoken = cookieValue;
+          console.log(csrftoken);
+
+          var data = '' ;
+
+          for(i=0;i<k.length;i++)
+          {
+
+             data = data + k[i]['x']+ ',' + k[i]['y']+ ',' + k[i]['height']+ ',' + k[i]['width']+ '===';
+          }
+          $.ajax({
+              method: 'POST',
+              url: 'reccoord',
+              data: {'coordinates': data,'image':dataUrl,'width':width,'height':height,"csrfmiddlewaretoken" : csrftoken,'check':'1'},
+              success: function (response) {
+                   chk = response;
+                   image = response['image']
+                   $("#example2").attr('src',image);
+              },
+              error: function (response) {
+                   alert("Encountered an error .. ..");
+              }
+          });
+
+
+      };
+
+      function drawCanvas()
+      {
+
+        var st = document.getElementById("example2");
+         st.style.display = 'none';
+
+         var stt = document.getElementById("canvas_img");
+         stt.style.display = '';
+
+         var img = document.getElementById('example2');
+         console.log(img);
+         const canvas = document.createElement('canvas');
+         const ctx = canvas.getContext('2d');
+         // Set width and height
+         console.log(img.width);
+         console.log(img.height);
+         canvas.width = img.naturalWidth;
+         canvas.height = img.naturalHeight;
+         canvas.id = "mycanv";
+         canvas.usemap = "#workmap";
+         // Draw the image
+         ctx.clearRect(0, 0, canvas.width, canvas.height);
+         ctx.drawImage(img, 0, 0);
+
+         div = document.getElementById("canvas_img");
+         div.innerHTML = '';
+         div.appendChild(canvas);
+
+         var e = document.getElementById("mycanv");
+         var rect = e.getBoundingClientRect();
+
+         AddText(canvas.width, canvas.height);
+
+         for(var i=0;i<k.length;i++)
+         {
+           var x = k[i]['x'] + rect.x;
+           var y = k[i]['y'] + rect.y;
+           var w = k[i]['width'];
+           var h = k[i]['height'];
+
+           
+
+           // console.log(x+","+y);
+
+           var ele = document.getElementById("mydiv"+i.toString());
+           ele.style.position = "absolute";
+           ele.style.left = x;
+           ele.style.top = y;
+
+           var recttt = ele.getBoundingClientRect();
+           ele.style.top = y-recttt.height;
+
+         }
+
+      }
+
+      function AddSingleText(width,height)
+      {
+            var i = counter;
+            var ele = document.getElementById("divtext");
+             idd = "mydiv"+i.toString();
+             ele.innerHTML = ele.innerHTML  + '<div onmouseleave="hideHeader('+i+')"  id="'+idd+'" style="position: absolute;">\
+            <div id="mydiv'+i+'headerr">\
+              <button id="mydiv'+i+'header" class="mydivheader btn btn-warning"><i class="fa fa-mouse-pointer"></i></button>\
+              <div style="display:none;" id="textsizeb'+i+'">\
+                <input id="textsized'+i+'" style="width:50px;" onkeyup="setValue('+i+')" type="text">\
+                <input onchange="setRange('+i+')" id="textsize'+i+'" style="background:black;" type="range" min="1" max="100" step="1">\
+              </div>\
+            <div class="container-fluid">\
+                <div class="row txtstbtn">\
+                  <button onclick="emboldenFont()" class="col-md-3 btn btn-primary"><i class="fa fa-bold"></i></button>\
+                  <button onclick="emitalicFont()" class="col-md-3 btn btn-success"><i class="fa fa-italic"></i></button>\
+                  <button onclick="showRange('+i+')" class="col-md-3 btn btn-primary"><i class="fa fa-text-height"></i></button>\
+                  <button onclick="DeleteEle('+i+')" class="col-md-3 btn btn-danger"><i class="fa fa-trash"></i></button>\
+                </div>  \
+            </div>\
+            </div>\
+             <div id="textc'+i+'" contentEditable="true" onmouseover="dragElement('+idd+')" type="text" placeholder="Demo" style="color: black;resize: both;background: transparent;font-size: 40px;border: none;position:absolute;width:'+width+'px;max-height='+height+';margin:0;padding:0">Demo</div>\
+           </div>';
+
+           var ele = document.getElementById("mydiv"+i.toString());
+           var recttt = document.getElementById("canvas_img").getBoundingClientRect();
+           ele.style.position = "absolute";
+           ele.style.left = recttt.x;
+           ele.style.top = recttt.y;
+           counter = counter + 1;
+      }
+
+      function hideHeader(id)
+      {
+          id = "mydiv"+id+"headerr";
+         var ele =  document.getElementById(id);
+         ele.style.visibility = 'hidden';
+      }
+
+      function AddText(width,height)
+      { 
+
+          if(counter >= k.length)
+          {
+            AddSingleText(width,height);
+            return;
+          }
+
+           for(var i=0;i<k.length;i++)
+           {
+             var ele = document.getElementById("divtext");
+             idd = "mydiv"+i.toString();
+             ele.innerHTML = ele.innerHTML  + '<div onmouseleave="hideHeader('+i+')"  id="'+idd+'" style="position: absolute;">\
+            <div id="mydiv'+i+'headerr">\
+              <button id="mydiv'+i+'header" class="mydivheader btn btn-warning"><i class="fa fa-mouse-pointer"></i></button>\
+              <div style="display:none;" id="textsizeb'+i+'">\
+                <input id="textsized'+i+'" style="width:50px;" onkeyup="setValue('+i+')" type="text">\
+                <input onchange="setRange('+i+')" id="textsize'+i+'" style="background:black;" type="range" min="1" max="100" step="1">\
+              </div>\
+            <div class="container-fluid">\
+                <div class="row txtstbtn">\
+                  <button onclick="emboldenFont()" class="col-md-3 btn btn-primary"><i class="fa fa-bold"></i></button>\
+                  <button onclick="emitalicFont()" class="col-md-3 btn btn-success"><i class="fa fa-italic"></i></button>\
+                  <button onclick="showRange('+i+')" class="col-md-3 btn btn-primary"><i class="fa fa-text-height"></i></button>\
+                  <button onclick="DeleteEle('+i+')" class="col-md-3 btn btn-danger"><i class="fa fa-trash"></i></button>\
+                </div>  \
+            </div>\
+            </div>\
+             <div id="textc'+i+'" contentEditable="true" onmouseover="dragElement('+idd+')" type="text" placeholder="Demo" style="color: black;resize: both;background: transparent;font-size: 40px;border: none;position:absolute;width:'+width+'px;max-height='+height+';margin:0;padding:0">Demo</div>\
+           </div>';
+
+           counter = counter + 1;
+           }
+      }
+
+      function DeleteEle(id)
+      {
+
+        var ele = document.getElementById("mydiv"+id);
+        ele.style.display = 'none';
+      }
+
+      function showRange(i) {
+        
+        var ele = document.getElementById("textsizeb"+i);
+        if(ele.style.display === 'none')
+        {
+          ele.style.display = 'inline';
+        }
+        else
+        {
+          ele.style.display = 'none';
+        }
+      }
+
+      function emboldenFont(command) 
+      {
+          
+             document.execCommand('bold', false, null);
+          
+      }
+
+       function emitalicFont(command) 
+      {
+          
+             document.execCommand('italic', false, null);
+          
+      }
+
+      function setValue(i)
+      {
+        var ele = document.getElementById("textsized"+i);
+        document.getElementById("textsize"+i).value = ele.value;
+        changeFontSize(i,ele.value);
+      }
+
+      function setRange(i)
+      {
+          var ele = document.getElementById("textsize"+i);
+          document.getElementById("textsized"+i).value = ele.value + "px";
+          changeFontSize(i,ele.value);
+      }
+
+      function changeFontSize(i,size)
+      {
+        var ele = document.getElementById("textc"+i);
+        ele.style.fontSize = size ;
+      }
+
+      function getDataUrl(img) {
+       // Create canvas
+       const canvas = document.createElement('canvas');
+       const ctx = canvas.getContext('2d');
+       // Set width and height
+       console.log(img.width);
+       console.log(img.height);
+       canvas.width = img.naturalWidth;
+       canvas.height = img.naturalHeight;
+       // Draw the image
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       ctx.drawImage(img, 0, 0);
+
+       // div = document.getElementById("canvas_img");
+       // div.appendChild(canvas);
+
+       return canvas.toDataURL('image/jpeg');
+    }
+
+
+    function dragElement(elt) {
+      elmnt = elt;
+      for(var i=0;i<counter;i++)
+      {
+        var st = document.getElementById("mydiv"+i+"headerr");
+        st.style.visibility = 'hidden';
+      }
+
+      var st = document.getElementById(elmnt.id + "headerr");
+      st.style.visibility = 'visible';
+
+      var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+      console.log(elmnt.id + "header");
+      if (document.getElementById(elmnt.id + "header")) {
+        /* if present, the header is where you move the DIV from:*/
+        document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+      } else {
+        /* otherwise, move the DIV from anywhere inside the DIV:*/
+        elmnt.onmousedown = dragMouseDown;
+      }
+
+
+      function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag;
+      }
+
+      function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // set the element's new position:
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+      }
+
+      function closeDragElement() {
+        /* stop moving when mouse button is released:*/
+        document.onmouseup = null;
+        document.onmousemove = null;
+      }
+    }
+
+    </script>
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+
+        <div class="col-md-6">
+          <div id="wrapper">
+            <h1>Select Areas</h1>
+            <div class="image-decorator">
+              <img width="500" alt="Image principale" id="example" src="/static/img/meme2.jpg"/>
+            </div>
+            <input class="btn btn-info" type="button" onclick="RecCoord()" value="Sent Coord" /> 
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div id="wrapper">
+            <h1>Add Text</h1>
+            <div class="image-decorator">
+              <img width="500" alt="Image principale" id="example2" src='https://previews.123rf.com/images/latkun/latkun1712/latkun171200130/92172856-empty-transparent-background-seamless-pattern.jpg'/>
+            </div>
+            <div id="canvas_img" class="image-decorator">
+
+            </div>
+            <input class="btn btn-info" type="button" onclick="drawCanvas()" value="Add Text" />
+          </div>
+        </div>
+
+        <div id="divtext">
+
+        </div>
+
+      </div>
+    </div>
+  </body>
+
+  <style type="text/css">
+    .mydiv {
+      position: absolute;
+      z-index: 9;
+      text-align: left;
+      background: transparent;
+    }
+
+    .mydivheader {
+      padding: 2px;
+      cursor: move;
+      z-index: 10;
+      background-color: #2196F3;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+    }
+
+    .txtstbtn
+    {
+      width: 200px;
+    }
+
+    .btn
+    {
+      border: 0;
+    }
+
+  </style>
+</html>
